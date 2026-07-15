@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
+import dns from "node:dns";
 import Footer from "@/components/shared/Footer";
 import Header from "@/components/shared/Header";
 import "./globals.css";
+
+dns.setServers(["8.8.8.8", "8.8.4.4"]);
 
 export const metadata: Metadata = {
   title: "ReRead - Used Book Marketplace",
