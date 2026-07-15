@@ -15,3 +15,15 @@ export async function getBackendHealth() {
     };
   }
 }
+
+export async function addBook(data: unknown) {
+  const res = await fetch(`${API_URL}/api/books`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+
+  return await res.json();
+}
