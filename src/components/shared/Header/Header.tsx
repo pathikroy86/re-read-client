@@ -2,19 +2,48 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type TMenuItem = {
   title: string;
   url: string;
 };
 
+type TAuthUser = {
+  id: string;
+  name: string;
+  email: string;
+  image?: string | null;
+};
+
 export default function Header() {
   const router = useRouter();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [user, setUser] = useState<TAuthUser | null>(null);
 
-  const user = null;
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await fetch("/api/auth/get-session", {
+          cache: "no-store",
+        });
+
+        if (!res.ok) {
+          setUser(null);
+          return;
+        }
+
+        const data = await res.json();
+        setUser(data?.user || null);
+      } catch (error) {
+        console.error(error);
+        setUser(null);
+      }
+    };
+
+    fetchUser();
+  }, [pathname]);
 
   const menuItems: TMenuItem[] = [
     { title: "Home", url: "/" },
@@ -33,6 +62,20 @@ export default function Header() {
   const handleNavigation = (url: string) => {
     router.push(url);
     setMobileOpen(false);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/sign-out", {
+        method: "POST",
+      });
+      setUser(null);
+      setMobileOpen(false);
+      router.push("/");
+      router.refresh();
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   return (
@@ -67,9 +110,20 @@ export default function Header() {
         {/* Desktop Auth Buttons */}
         <div className="hidden items-center gap-3 lg:flex">
           {user ? (
-            <button className="rounded-full border border-emerald-200 px-5 py-2 text-sm font-semibold text-emerald-700 transition-colors hover:bg-emerald-50">
-              Logout
-            </button>
+            <>
+              <div className="text-right">
+                <p className="text-sm font-semibold text-slate-900">
+                  {user.name}
+                </p>
+                <p className="text-xs text-slate-500">{user.email}</p>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="rounded-full border border-emerald-200 px-5 py-2 text-sm font-semibold text-emerald-700 transition-colors hover:bg-emerald-50"
+              >
+                Logout
+              </button>
+            </>
           ) : (
             <>
               <button
@@ -129,9 +183,20 @@ export default function Header() {
 
           <div className="mx-auto mt-4 flex max-w-7xl flex-col gap-3 border-t border-slate-100 pt-4">
             {user ? (
-              <button className="w-full rounded-full border border-emerald-200 px-5 py-3 text-sm font-semibold text-emerald-700">
-                Logout
-              </button>
+              <>
+                <div className="rounded-2xl bg-emerald-50 px-4 py-3">
+                  <p className="text-sm font-semibold text-slate-900">
+                    {user.name}
+                  </p>
+                  <p className="text-xs text-slate-500">{user.email}</p>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="w-full rounded-full border border-emerald-200 px-5 py-3 text-sm font-semibold text-emerald-700"
+                >
+                  Logout
+                </button>
+              </>
             ) : (
               <>
                 <button
