@@ -11,6 +11,8 @@ export type TBook = {
   language: string;
   edition: string;
   imageUrl?: string;
+  rating?: number;
+  reviewCount?: number;
   ownerName?: string;
   ownerEmail?: string;
   status: string;
