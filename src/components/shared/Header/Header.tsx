@@ -53,6 +53,7 @@ export default function Header() {
     { title: "Contact", url: "/contact" },
     ...(user
       ? [
+          { title: "Profile", url: "/profile" },
           { title: "Dashboard", url: "/dashboard" },
           { title: "Add Book", url: "/items/add" },
         ]

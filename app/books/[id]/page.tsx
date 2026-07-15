@@ -1,6 +1,7 @@
 "use client";
 
-import { getBook, getBooks, TBook } from "@/service/api";
+import { getBook, getBooks, saveFavorite, TBook } from "@/service/api";
+import { Modal, useOverlayState } from "@heroui/react";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -9,10 +10,14 @@ import { useEffect, useState } from "react";
 export default function BookDetailsPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
+  const contactModal = useOverlayState();
   const [book, setBook] = useState<TBook | null>(null);
   const [relatedBooks, setRelatedBooks] = useState<TBook[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [favoriteMessage, setFavoriteMessage] = useState("");
+  const [favoriteError, setFavoriteError] = useState("");
+  const [savingFavorite, setSavingFavorite] = useState(false);
 
   useEffect(() => {
     const fetchBook = async () => {
@@ -80,6 +85,44 @@ export default function BookDetailsPage() {
     month: "long",
     day: "numeric",
   });
+  const ownerName = book.ownerName || "ReRead Seller";
+  const ownerEmail = book.ownerEmail || "seller@reread.app";
+
+  const handleSaveFavorite = async () => {
+    setFavoriteMessage("");
+    setFavoriteError("");
+
+    try {
+      setSavingFavorite(true);
+      const sessionRes = await fetch("/api/auth/get-session", {
+        cache: "no-store",
+      });
+      const session = await sessionRes.json();
+
+      if (!session?.user) {
+        router.push("/login");
+        return;
+      }
+
+      const result = await saveFavorite({
+        bookId: book.id,
+        userEmail: session.user.email,
+        userName: session.user.name,
+      });
+
+      if (!result.success) {
+        setFavoriteError(result.message || "Failed to save favorite");
+        return;
+      }
+
+      setFavoriteMessage(result.message);
+    } catch (error) {
+      console.error(error);
+      setFavoriteError("Something went wrong while saving this book");
+    } finally {
+      setSavingFavorite(false);
+    }
+  };
 
   return (
     <main className="bg-slate-50 px-4 py-12 sm:px-6 lg:px-8">
@@ -136,16 +179,93 @@ export default function BookDetailsPage() {
             </p>
 
             <div className="mt-8 grid gap-3 sm:grid-cols-2">
-              <button className="rounded-full bg-emerald-700 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-emerald-800">
-                Save to Favorites
-              </button>
-              <a
-                href={`mailto:${book.ownerEmail || "seller@reread.app"}`}
-                className="rounded-full border border-emerald-200 px-6 py-3 text-center text-sm font-semibold text-emerald-700 transition-colors hover:bg-emerald-50"
+              <button
+                onClick={handleSaveFavorite}
+                disabled={savingFavorite}
+                className="rounded-full bg-emerald-700 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-emerald-400"
               >
-                Contact Owner
-              </a>
+                {savingFavorite ? "Saving..." : "Save to Favorites"}
+              </button>
+              <Modal state={contactModal}>
+                <Modal.Trigger className="rounded-full border border-emerald-200 px-6 py-3 text-center text-sm font-semibold text-emerald-700 transition-colors hover:bg-emerald-50">
+                  Contact Owner
+                </Modal.Trigger>
+                <Modal.Backdrop className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 px-4 backdrop-blur-sm">
+                  <Modal.Container
+                    placement="center"
+                    size="md"
+                    className="w-full max-w-lg outline-none"
+                  >
+                    <Modal.Dialog className="relative rounded-3xl border border-slate-200 bg-white p-0 shadow-2xl outline-none">
+                      <Modal.CloseTrigger className="absolute right-4 top-4 rounded-full bg-slate-100 p-2 text-slate-500 transition hover:bg-slate-200 hover:text-slate-900" />
+
+                      <Modal.Header className="rounded-t-3xl bg-emerald-700 px-6 py-6 text-white">
+                        <div>
+                          <p className="text-sm font-semibold uppercase tracking-wide text-emerald-100">
+                            Owner information
+                          </p>
+                          <Modal.Heading className="mt-2 text-2xl font-bold">
+                            Contact {ownerName}
+                          </Modal.Heading>
+                        </div>
+                      </Modal.Header>
+
+                      <Modal.Body className="space-y-5 px-6 py-6">
+                        <div className="rounded-2xl bg-slate-50 p-5">
+                          <p className="text-sm font-semibold text-slate-500">
+                            Book
+                          </p>
+                          <h3 className="mt-1 text-lg font-bold text-slate-950">
+                            {book.title}
+                          </h3>
+                          <p className="mt-1 text-sm text-slate-600">
+                            {book.location} · ৳{book.price}
+                          </p>
+                        </div>
+
+                        <div className="grid gap-3">
+                          <OwnerInfo label="Owner name" value={ownerName} />
+                          <OwnerInfo label="Email address" value={ownerEmail} />
+                          <OwnerInfo label="Location" value={book.location} />
+                          <OwnerInfo label="Listing status" value={book.status} />
+                        </div>
+
+                        <p className="rounded-2xl bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-800">
+                          Message the owner to confirm availability, pickup
+                          place, and final book condition before meeting.
+                        </p>
+                      </Modal.Body>
+
+                      <Modal.Footer className="flex flex-col gap-3 border-t border-slate-100 px-6 py-5 sm:flex-row sm:justify-end">
+                        <Modal.CloseTrigger className="rounded-full border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
+                          Close
+                        </Modal.CloseTrigger>
+                        <a
+                          href={`mailto:${ownerEmail}?subject=Interested in ${encodeURIComponent(
+                            book.title
+                          )}`}
+                          className="rounded-full bg-emerald-700 px-5 py-3 text-center text-sm font-semibold text-white transition hover:bg-emerald-800"
+                        >
+                          Send Email
+                        </a>
+                      </Modal.Footer>
+                    </Modal.Dialog>
+                  </Modal.Container>
+                </Modal.Backdrop>
+              </Modal>
             </div>
+
+            {favoriteMessage && (
+              <p className="mt-4 rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
+                {favoriteMessage}
+              </p>
+            )}
+
+            {favoriteError && (
+              <p className="mt-4 rounded-2xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+                {favoriteError}
+              </p>
+            )}
           </div>
         </section>
 
@@ -172,7 +292,7 @@ export default function BookDetailsPage() {
               <Info label="Language" value={book.language} />
               <Info label="Edition" value={book.edition} />
               <Info label="Listed" value={listedDate} />
-              <Info label="Owner" value={book.ownerName || "ReRead Seller"} />
+              <Info label="Owner" value={ownerName} />
             </div>
           </aside>
         </section>
@@ -243,6 +363,15 @@ function Info({ label, value }: { label: string; value: string }) {
       <p className="text-right text-sm font-semibold text-slate-900">
         {value}
       </p>
+    </div>
+  );
+}
+
+function OwnerInfo({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex flex-col gap-1 rounded-2xl border border-slate-100 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-sm font-medium text-slate-500">{label}</p>
+      <p className="text-sm font-semibold text-slate-950">{value}</p>
     </div>
   );
 }

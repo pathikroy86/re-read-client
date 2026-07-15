@@ -17,6 +17,14 @@ export type TBook = {
   createdAt: string;
 };
 
+export type TFavorite = {
+  id: string;
+  bookId: string;
+  userEmail: string;
+  createdAt: string;
+  book: TBook;
+};
+
 export async function getBackendHealth() {
   try {
     const res = await fetch("/api/backend-health", {
@@ -74,4 +82,35 @@ export async function addBook(data: unknown) {
   });
 
   return await res.json();
+}
+
+export async function saveFavorite(data: unknown) {
+  const res = await fetch("/api/favorites", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+
+  return await res.json();
+}
+
+export async function getFavorites(userEmail: string) {
+  try {
+    const res = await fetch(
+      `/api/favorites?userEmail=${encodeURIComponent(userEmail)}`,
+      {
+        cache: "no-store",
+      }
+    );
+
+    return await res.json();
+  } catch {
+    return {
+      success: false,
+      message: "Favorites are not reachable",
+      data: [],
+    };
+  }
 }
