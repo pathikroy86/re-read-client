@@ -7,7 +7,14 @@ if (!process.env.MONGODB_URI) {
     throw new Error("Please define MONGODB_URI in .env");
 }
 
-const client = new MongoClient(process.env.MONGODB_URI);
+function getMongoUri() {
+    return process.env.MONGODB_URI!.replace(
+        "@cluster0.exh2zgz.mongodb.net/?appName=Cluster0",
+        "@ac-8wcx1qf-shard-00-00.exh2zgz.mongodb.net:27017,ac-8wcx1qf-shard-00-01.exh2zgz.mongodb.net:27017,ac-8wcx1qf-shard-00-02.exh2zgz.mongodb.net:27017/?ssl=true&authSource=admin&replicaSet=atlas-hpoy7r-shard-0&retryWrites=true&w=majority&appName=Cluster0"
+    ).replace("mongodb+srv://", "mongodb://");
+}
+
+const client = new MongoClient(getMongoUri());
 const db = client.db("ReRead");
 
 export const auth = betterAuth({

@@ -91,7 +91,9 @@ export default function RegisterPage() {
         }),
       });
 
-      const result = await res.json();
+      const result = await res.json().catch(() => ({
+        message: "Registration failed. Please try again.",
+      }));
 
       if (!res.ok) {
         setError(result?.message || "Registration failed. Please try again.");

@@ -78,7 +78,9 @@ export default function LoginPage() {
         }),
       });
 
-      const result = await res.json();
+      const result = await res.json().catch(() => ({
+        message: "Login failed. Please try again.",
+      }));
 
       if (!res.ok) {
         setError(result?.message || "Invalid email or password.");
