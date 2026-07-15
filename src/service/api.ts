@@ -48,6 +48,22 @@ export async function getBooks() {
   }
 }
 
+export async function getBook(id: string) {
+  try {
+    const res = await fetch(`/api/books/${id}`, {
+      cache: "no-store",
+    });
+
+    return await res.json();
+  } catch {
+    return {
+      success: false,
+      message: "Book is not reachable",
+      data: null,
+    };
+  }
+}
+
 export async function addBook(data: unknown) {
   const res = await fetch("/api/books", {
     method: "POST",

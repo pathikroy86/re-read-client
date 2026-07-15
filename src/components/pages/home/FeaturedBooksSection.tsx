@@ -98,7 +98,7 @@ export default function FeaturedBooksSection() {
                       <p className="text-xs text-slate-500">{book.location}</p>
                     </div>
                     <Link
-                      href="/explore"
+                      href={`/books/${book.id}`}
                       className="rounded-full bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-emerald-700"
                     >
                       View Details
