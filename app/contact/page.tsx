@@ -1,7 +1,8 @@
 "use client";
 
+import { sendContactMessage } from "@/service/api";
 import Link from "next/link";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 
 const contactCards = [
   {
@@ -48,23 +49,60 @@ export default function ContactPage() {
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
   const [notice, setNotice] = useState("");
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [userEmail, setUserEmail] = useState("");
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  useEffect(() => {
+    const fetchSession = async () => {
+      try {
+        const res = await fetch("/api/auth/get-session", {
+          cache: "no-store",
+        });
+        const session = await res.json();
+
+        if (session?.user) {
+          setName(session.user.name || "");
+          setEmail(session.user.email || "");
+          setUserEmail(session.user.email || "");
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    fetchSession();
+  }, []);
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setNotice("");
+    setError("");
+    setSubmitting(true);
 
-    const body = [
-      `Name: ${name}`,
-      `Email: ${email}`,
-      "",
-      message,
-    ].join("\n");
+    try {
+      const result = await sendContactMessage({
+        name,
+        email,
+        subject,
+        message,
+        userEmail: userEmail || email,
+      });
 
-    const mailUrl = `mailto:support@reread.app?subject=${encodeURIComponent(
-      subject || "ReRead support request"
-    )}&body=${encodeURIComponent(body)}`;
+      if (!result.success) {
+        setError(result.message || "Failed to send your message.");
+        return;
+      }
 
-    window.location.href = mailUrl;
-    setNotice("Your email app is opening with the message ready to send.");
+      setNotice("Message sent successfully. You can see it in your dashboard.");
+      setSubject("");
+      setMessage("");
+    } catch (error) {
+      console.error(error);
+      setError("Something went wrong while sending your message.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -237,14 +275,21 @@ export default function ContactPage() {
 
             <button
               type="submit"
+              disabled={submitting}
               className="mt-6 w-full rounded-full bg-emerald-700 px-6 py-3 text-sm font-bold text-white shadow-sm transition hover:-translate-y-1 hover:bg-emerald-800 sm:w-auto"
             >
-              Open Email App
+              {submitting ? "Sending..." : "Send Message"}
             </button>
 
             {notice && (
               <p className="mt-4 rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
                 {notice}
+              </p>
+            )}
+
+            {error && (
+              <p className="mt-4 rounded-2xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+                {error}
               </p>
             )}
           </form>

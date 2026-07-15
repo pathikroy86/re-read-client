@@ -25,6 +25,17 @@ export type TFavorite = {
   book: TBook;
 };
 
+export type TContactMessage = {
+  id: string;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  userEmail: string;
+  status: string;
+  createdAt: string;
+};
+
 export async function getBackendHealth() {
   try {
     const res = await fetch("/api/backend-health", {
@@ -110,6 +121,37 @@ export async function getFavorites(userEmail: string) {
     return {
       success: false,
       message: "Favorites are not reachable",
+      data: [],
+    };
+  }
+}
+
+export async function sendContactMessage(data: unknown) {
+  const res = await fetch("/api/contact-messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+
+  return await res.json();
+}
+
+export async function getContactMessages(userEmail: string) {
+  try {
+    const res = await fetch(
+      `/api/contact-messages?userEmail=${encodeURIComponent(userEmail)}`,
+      {
+        cache: "no-store",
+      }
+    );
+
+    return await res.json();
+  } catch {
+    return {
+      success: false,
+      message: "Messages are not reachable",
       data: [],
     };
   }
