@@ -1,15 +1,48 @@
-import { NextResponse } from "next/server";
+import { getApiAuthHeaders, unauthorizedResponse } from "@/lib/api-auth";
+import { getApiUrl } from "@/lib/env";
+import { NextRequest, NextResponse } from "next/server";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const API_URL = getApiUrl();
 
 export async function GET(
-  _req: Request,
+  _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
     const res = await fetch(`${API_URL}/api/books/${id}`, {
       cache: "no-store",
+    });
+
+    const result = await res.json();
+    return NextResponse.json(result, { status: res.status });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Express backend is not reachable",
+      },
+      { status: 200 }
+    );
+  }
+}
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const authHeaders = await getApiAuthHeaders(req);
+
+    if (!authHeaders) {
+      return unauthorizedResponse();
+    }
+
+    const res = await fetch(`${API_URL}/api/books/${id}`, {
+      method: "DELETE",
+      headers: authHeaders,
     });
 
     const result = await res.json();

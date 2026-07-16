@@ -3,10 +3,12 @@
 import {
   getBooks,
   getBlogs,
+  getCartItems,
   getContactMessages,
   getFavorites,
   TBlog,
   TBook,
+  TCartItem,
   TContactMessage,
   TFavorite,
 } from "@/service/api";
@@ -37,7 +39,7 @@ type TActivity = {
   title: string;
   description: string;
   date: string;
-  type: "book" | "blog" | "favorite" | "message";
+  type: "book" | "blog" | "favorite" | "cart" | "message";
 };
 
 export default function DashboardPage() {
@@ -46,6 +48,7 @@ export default function DashboardPage() {
   const [myBooks, setMyBooks] = useState<TBook[]>([]);
   const [myBlogs, setMyBlogs] = useState<TBlog[]>([]);
   const [favorites, setFavorites] = useState<TFavorite[]>([]);
+  const [cartItems, setCartItems] = useState<TCartItem[]>([]);
   const [messages, setMessages] = useState<TContactMessage[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -64,11 +67,12 @@ export default function DashboardPage() {
 
         setUser(session.user);
 
-        const [booksResult, blogsResult, favoritesResult, messageResult] =
+        const [booksResult, blogsResult, favoritesResult, cartResult, messageResult] =
           await Promise.all([
             getBooks(),
             getBlogs(),
             getFavorites(session.user.email),
+            getCartItems(),
             getContactMessages(session.user.email),
           ]);
 
@@ -88,6 +92,10 @@ export default function DashboardPage() {
 
         if (favoritesResult.success) {
           setFavorites(favoritesResult.data);
+        }
+
+        if (cartResult.success) {
+          setCartItems(cartResult.data);
         }
 
         if (messageResult.success) {
@@ -137,26 +145,35 @@ export default function DashboardPage() {
       type: "message",
     }));
 
+    const cartActivities: TActivity[] = cartItems.map((item) => ({
+      id: `cart-${item.id}`,
+      title: "Book added to cart",
+      description: item.book.title,
+      date: item.createdAt,
+      type: "cart",
+    }));
+
     return [
       ...bookActivities,
       ...blogActivities,
       ...favoriteActivities,
+      ...cartActivities,
       ...messageActivities,
     ]
       .sort(
         (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
       )
       .slice(0, 8);
-  }, [myBooks, myBlogs, favorites, messages]);
+  }, [myBooks, myBlogs, favorites, cartItems, messages]);
 
   const activityChartData = useMemo(
     () => [
       { name: "Books", value: myBooks.length, color: "#047857" },
       { name: "Blogs", value: myBlogs.length, color: "#7c3aed" },
       { name: "Favorites", value: favorites.length, color: "#d97706" },
-      { name: "Messages", value: messages.length, color: "#0284c7" },
+      { name: "Cart", value: cartItems.length, color: "#0284c7" },
     ],
-    [myBooks.length, myBlogs.length, favorites.length, messages.length]
+    [myBooks.length, myBlogs.length, favorites.length, cartItems.length]
   );
 
   const monthlyActivityData = useMemo(() => {
@@ -172,6 +189,10 @@ export default function DashboardPage() {
       ...messages.map((message) => ({
         date: message.createdAt,
         type: "messages",
+      })),
+      ...cartItems.map((item) => ({
+        date: item.createdAt,
+        type: "cart",
       })),
     ];
 
@@ -196,9 +217,11 @@ export default function DashboardPage() {
         messages: monthActivities.filter(
           (activity) => activity.type === "messages"
         ).length,
+        cart: monthActivities.filter((activity) => activity.type === "cart")
+          .length,
       };
     });
-  }, [myBooks, myBlogs, favorites, messages]);
+  }, [myBooks, myBlogs, favorites, messages, cartItems]);
 
   if (loading) {
     return (
@@ -250,7 +273,7 @@ export default function DashboardPage() {
             <DashboardStat label="Books listed" value={myBooks.length} />
             <DashboardStat label="Blogs written" value={myBlogs.length} />
             <DashboardStat label="Saved favorites" value={favorites.length} />
-            <DashboardStat label="Messages sent" value={messages.length} />
+            <DashboardStat label="Cart books" value={cartItems.length} />
           </div>
         </section>
 
@@ -318,7 +341,7 @@ export default function DashboardPage() {
                 Activity over the last 6 months
               </h2>
               <p className="mt-2 text-sm leading-6 text-slate-600">
-                Books, blogs, favorites, and messages grouped by month.
+                Books, blogs, favorites, cart, and messages grouped by month.
               </p>
             </div>
 
@@ -350,6 +373,11 @@ export default function DashboardPage() {
                   <Bar dataKey="favorites" stackId="activity" fill="#d97706" />
                   <Bar
                     dataKey="messages"
+                    stackId="activity"
+                    fill="#38bdf8"
+                  />
+                  <Bar
+                    dataKey="cart"
                     stackId="activity"
                     fill="#0284c7"
                     radius={[8, 8, 0, 0]}
@@ -412,6 +440,7 @@ export default function DashboardPage() {
 
             <div className="mt-6 grid gap-3">
               <QuickLink href="/profile" title="View profile and favorites" />
+              <QuickLink href="/cart" title="View cart books" />
               <QuickLink href="/contact" title="Send a support message" />
               <QuickLink href="/items/add" title="Add another book" />
             </div>
@@ -498,6 +527,28 @@ export default function DashboardPage() {
               />
             )}
           </DashboardPanel>
+
+          <DashboardPanel
+            title="Books in your cart"
+            subtitle="Books you are considering"
+            actionHref="/cart"
+            actionText="Open Cart"
+          >
+            {cartItems.length ? (
+              <div className="grid gap-4 sm:grid-cols-2">
+                {cartItems.slice(0, 4).map((item) => (
+                  <BookMiniCard key={item.id} book={item.book} />
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                title="No cart books"
+                description="Add books to cart from Explore or a book details page."
+                href="/explore"
+                buttonText="Explore Books"
+              />
+            )}
+          </DashboardPanel>
         </section>
 
         <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
@@ -565,6 +616,7 @@ function ActivityItem({ activity }: { activity: TActivity }) {
     book: "bg-emerald-100 text-emerald-700",
     blog: "bg-violet-100 text-violet-700",
     favorite: "bg-amber-100 text-amber-700",
+    cart: "bg-cyan-100 text-cyan-700",
     message: "bg-sky-100 text-sky-700",
   }[activity.type];
 
@@ -579,7 +631,9 @@ function ActivityItem({ activity }: { activity: TActivity }) {
             ? "W"
             : activity.type === "favorite"
               ? "F"
-              : "M"}
+              : activity.type === "cart"
+                ? "C"
+                : "M"}
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex flex-col justify-between gap-1 sm:flex-row">

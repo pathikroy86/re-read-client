@@ -104,7 +104,8 @@ export default function RegisterPage() {
       setFormData(initialForm);
 
       setTimeout(() => {
-        router.push("/");
+        router.push(getRedirectPath("/dashboard"));
+        router.refresh();
       }, 800);
     } catch (error) {
       console.error(error);
@@ -262,4 +263,15 @@ export default function RegisterPage() {
       </div>
     </main>
   );
+}
+
+function getRedirectPath(fallback: string) {
+  const params = new URLSearchParams(window.location.search);
+  const redirect = params.get("redirect");
+
+  if (redirect?.startsWith("/")) {
+    return redirect;
+  }
+
+  return fallback;
 }

@@ -1,13 +1,16 @@
 "use client";
 
-import { getBooks, TBook } from "@/service/api";
+import { addToCart, getBooks, TBook } from "@/service/api";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function FeaturedBooksSection() {
+  const router = useRouter();
   const [books, setBooks] = useState<TBook[]>([]);
   const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
     const fetchBooks = async () => {
@@ -22,6 +25,17 @@ export default function FeaturedBooksSection() {
 
     fetchBooks();
   }, []);
+
+  const handleAddToCart = async (bookId: string) => {
+    const result = await addToCart({ bookId });
+
+    if (result.message === "Please login first") {
+      router.push("/login?redirect=/cart");
+      return;
+    }
+
+    setMessage(result.message || "Book added to cart");
+  };
 
   return (
     <section className="bg-white py-16">
@@ -53,12 +67,18 @@ export default function FeaturedBooksSection() {
             ))}
           </div>
         ) : books.length ? (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {books.map((book) => (
-              <div
-                key={book.id}
-                className="flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
-              >
+          <>
+            {message && (
+              <p className="mb-6 rounded-2xl bg-cyan-50 px-4 py-3 text-sm font-semibold text-cyan-700">
+                {message}
+              </p>
+            )}
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              {books.map((book) => (
+                <div
+                  key={book.id}
+                  className="flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+                >
                 <div className="relative h-48 bg-slate-100">
                   {book.imageUrl ? (
                     <Image
@@ -90,24 +110,33 @@ export default function FeaturedBooksSection() {
                   <p className="mt-3 line-clamp-3 flex-1 text-sm leading-6 text-slate-600">
                     {book.shortDescription}
                   </p>
-                  <div className="mt-5 flex items-center justify-between">
+                  <div className="mt-5 flex items-center justify-between gap-3">
                     <div>
                       <p className="text-lg font-bold text-emerald-700">
                         ৳{book.price}
                       </p>
                       <p className="text-xs text-slate-500">{book.location}</p>
                     </div>
-                    <Link
-                      href={`/books/${book.id}`}
-                      className="rounded-full bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-emerald-700"
-                    >
-                      View Details
-                    </Link>
+                    <div className="flex flex-col gap-2">
+                      <button
+                        onClick={() => handleAddToCart(book.id)}
+                        className="rounded-full bg-emerald-700 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-emerald-800"
+                      >
+                        Add Cart
+                      </button>
+                      <Link
+                        href={`/books/${book.id}`}
+                        className="rounded-full bg-slate-950 px-4 py-2 text-center text-sm font-semibold text-white transition-colors hover:bg-emerald-700"
+                      >
+                        Details
+                      </Link>
+                    </div>
                   </div>
                 </div>
               </div>
             ))}
-          </div>
+            </div>
+          </>
         ) : (
           <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-center">
             <p className="font-semibold text-amber-800">

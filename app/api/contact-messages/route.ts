@@ -1,9 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getApiAuthHeaders, unauthorizedResponse } from "@/lib/api-auth";
+import { getApiUrl } from "@/lib/env";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const API_URL = getApiUrl();
 
 export async function GET(req: NextRequest) {
   try {
+    const authHeaders = await getApiAuthHeaders(req);
+
+    if (!authHeaders) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Please login first",
+          data: [],
+        },
+        { status: 401 }
+      );
+    }
+
     const userEmail = req.nextUrl.searchParams.get("userEmail") || "";
     const res = await fetch(
       `${API_URL}/api/contact-messages?userEmail=${encodeURIComponent(
@@ -11,6 +26,7 @@ export async function GET(req: NextRequest) {
       )}`,
       {
         cache: "no-store",
+        headers: authHeaders,
       }
     );
 
@@ -32,10 +48,17 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const data = await req.json();
+    const authHeaders = await getApiAuthHeaders(req);
+
+    if (!authHeaders) {
+      return unauthorizedResponse();
+    }
+
     const res = await fetch(`${API_URL}/api/contact-messages`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...authHeaders,
       },
       body: JSON.stringify(data),
     });

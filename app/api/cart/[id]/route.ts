@@ -1,16 +1,24 @@
-import { NextRequest, NextResponse } from "next/server";
+import { getApiAuthHeaders, unauthorizedResponse } from "@/lib/api-auth";
 import { getApiUrl } from "@/lib/env";
+import { NextRequest, NextResponse } from "next/server";
 
 const API_URL = getApiUrl();
 
-export async function GET(
-  _req: NextRequest,
+export async function DELETE(
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
-    const res = await fetch(`${API_URL}/api/blogs/${id}`, {
-      cache: "no-store",
+    const authHeaders = await getApiAuthHeaders(req);
+
+    if (!authHeaders) {
+      return unauthorizedResponse();
+    }
+
+    const res = await fetch(`${API_URL}/api/cart/${id}`, {
+      method: "DELETE",
+      headers: authHeaders,
     });
 
     const result = await res.json();
@@ -21,7 +29,6 @@ export async function GET(
       {
         success: false,
         message: "Express backend is not reachable",
-        data: null,
       },
       { status: 200 }
     );

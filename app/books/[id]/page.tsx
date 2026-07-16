@@ -1,6 +1,6 @@
 "use client";
 
-import { getBook, getBooks, saveFavorite, TBook } from "@/service/api";
+import { addToCart, getBook, getBooks, saveFavorite, TBook } from "@/service/api";
 import { Modal, useOverlayState } from "@heroui/react";
 import Image from "next/image";
 import Link from "next/link";
@@ -18,6 +18,9 @@ export default function BookDetailsPage() {
   const [favoriteMessage, setFavoriteMessage] = useState("");
   const [favoriteError, setFavoriteError] = useState("");
   const [savingFavorite, setSavingFavorite] = useState(false);
+  const [cartMessage, setCartMessage] = useState("");
+  const [cartError, setCartError] = useState("");
+  const [addingCart, setAddingCart] = useState(false);
 
   useEffect(() => {
     const fetchBook = async () => {
@@ -124,6 +127,35 @@ export default function BookDetailsPage() {
     }
   };
 
+  const handleAddToCart = async () => {
+    setCartMessage("");
+    setCartError("");
+
+    try {
+      setAddingCart(true);
+      const result = await addToCart({
+        bookId: book.id,
+      });
+
+      if (result.message === "Please login first") {
+        router.push("/login?redirect=/cart");
+        return;
+      }
+
+      if (!result.success) {
+        setCartError(result.message || "Failed to add book to cart");
+        return;
+      }
+
+      setCartMessage(result.message);
+    } catch (error) {
+      console.error(error);
+      setCartError("Something went wrong while adding this book to cart");
+    } finally {
+      setAddingCart(false);
+    }
+  };
+
   return (
     <main className="bg-slate-50 px-4 py-12 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
@@ -179,6 +211,13 @@ export default function BookDetailsPage() {
             </p>
 
             <div className="mt-8 grid gap-3 sm:grid-cols-2">
+              <button
+                onClick={handleAddToCart}
+                disabled={addingCart}
+                className="rounded-full bg-slate-950 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+              >
+                {addingCart ? "Adding..." : "Add to Cart"}
+              </button>
               <button
                 onClick={handleSaveFavorite}
                 disabled={savingFavorite}
@@ -254,6 +293,18 @@ export default function BookDetailsPage() {
                 </Modal.Backdrop>
               </Modal>
             </div>
+
+            {cartMessage && (
+              <p className="mt-4 rounded-2xl bg-cyan-50 px-4 py-3 text-sm font-medium text-cyan-700">
+                {cartMessage}
+              </p>
+            )}
+
+            {cartError && (
+              <p className="mt-4 rounded-2xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+                {cartError}
+              </p>
+            )}
 
             {favoriteMessage && (
               <p className="mt-4 rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">

@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
 import { getApiAuthHeaders, unauthorizedResponse } from "@/lib/api-auth";
 import { getApiUrl } from "@/lib/env";
+import { NextRequest, NextResponse } from "next/server";
 
 const API_URL = getApiUrl();
 
@@ -19,14 +19,10 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const userEmail = req.nextUrl.searchParams.get("userEmail") || "";
-    const res = await fetch(
-      `${API_URL}/api/favorites?userEmail=${encodeURIComponent(userEmail)}`,
-      {
-        cache: "no-store",
-        headers: authHeaders,
-      }
-    );
+    const res = await fetch(`${API_URL}/api/cart`, {
+      cache: "no-store",
+      headers: authHeaders,
+    });
 
     const result = await res.json();
     return NextResponse.json(result, { status: res.status });
@@ -52,7 +48,7 @@ export async function POST(req: NextRequest) {
       return unauthorizedResponse();
     }
 
-    const res = await fetch(`${API_URL}/api/favorites`, {
+    const res = await fetch(`${API_URL}/api/cart`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

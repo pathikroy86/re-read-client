@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getApiAuthHeaders, unauthorizedResponse } from "@/lib/api-auth";
+import { getApiUrl } from "@/lib/env";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const API_URL = getApiUrl();
 
 export async function POST(
   req: NextRequest,
@@ -9,10 +11,17 @@ export async function POST(
   try {
     const { id } = await params;
     const data = await req.json();
+    const authHeaders = await getApiAuthHeaders(req);
+
+    if (!authHeaders) {
+      return unauthorizedResponse();
+    }
+
     const res = await fetch(`${API_URL}/api/blogs/${id}/comments`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...authHeaders,
       },
       body: JSON.stringify(data),
     });

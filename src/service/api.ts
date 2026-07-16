@@ -27,6 +27,14 @@ export type TFavorite = {
   book: TBook;
 };
 
+export type TCartItem = {
+  id: string;
+  bookId: string;
+  userEmail: string;
+  createdAt: string;
+  book: TBook;
+};
+
 export type TContactMessage = {
   id: string;
   name: string;
@@ -62,6 +70,16 @@ export type TBlog = {
   commentsCount: number;
   comments?: TBlogComment[];
   createdAt: string;
+};
+
+export type TProfile = {
+  name: string;
+  email: string;
+  phone: string;
+  location: string;
+  bio: string;
+  profileImage: string;
+  updatedAt?: string | null;
 };
 
 export async function getBackendHealth() {
@@ -123,6 +141,14 @@ export async function addBook(data: unknown) {
   return await res.json();
 }
 
+export async function deleteBook(id: string) {
+  const res = await fetch(`/api/books/${id}`, {
+    method: "DELETE",
+  });
+
+  return await res.json();
+}
+
 export async function saveFavorite(data: unknown) {
   const res = await fetch("/api/favorites", {
     method: "POST",
@@ -152,6 +178,54 @@ export async function getFavorites(userEmail: string) {
       data: [],
     };
   }
+}
+
+export async function addToCart(data: unknown) {
+  const res = await fetch("/api/cart", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+
+  const result = await res.json();
+
+  if (result.success && typeof window !== "undefined") {
+    window.dispatchEvent(new Event("cart-updated"));
+  }
+
+  return result;
+}
+
+export async function getCartItems() {
+  try {
+    const res = await fetch("/api/cart", {
+      cache: "no-store",
+    });
+
+    return await res.json();
+  } catch {
+    return {
+      success: false,
+      message: "Cart is not reachable",
+      data: [],
+    };
+  }
+}
+
+export async function removeCartItem(id: string) {
+  const res = await fetch(`/api/cart/${id}`, {
+    method: "DELETE",
+  });
+
+  const result = await res.json();
+
+  if (result.success && typeof window !== "undefined") {
+    window.dispatchEvent(new Event("cart-updated"));
+  }
+
+  return result;
 }
 
 export async function sendContactMessage(data: unknown) {
@@ -239,4 +313,38 @@ export async function addBlogComment(blogId: string, data: unknown) {
   });
 
   return await res.json();
+}
+
+export async function getProfile() {
+  try {
+    const res = await fetch("/api/profile", {
+      cache: "no-store",
+    });
+
+    return await res.json();
+  } catch {
+    return {
+      success: false,
+      message: "Profile is not reachable",
+      data: null,
+    };
+  }
+}
+
+export async function updateProfile(data: unknown) {
+  const res = await fetch("/api/profile", {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+
+  const result = await res.json();
+
+  if (result.success && typeof window !== "undefined") {
+    window.dispatchEvent(new Event("profile-updated"));
+  }
+
+  return result;
 }

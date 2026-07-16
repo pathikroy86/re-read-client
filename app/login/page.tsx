@@ -90,7 +90,7 @@ export default function LoginPage() {
       setSuccess("Login successful!");
 
       setTimeout(() => {
-        router.push("/");
+        router.push(getRedirectPath("/"));
         router.refresh();
       }, 700);
     } catch (error) {
@@ -215,4 +215,15 @@ export default function LoginPage() {
       </div>
     </main>
   );
+}
+
+function getRedirectPath(fallback: string) {
+  const params = new URLSearchParams(window.location.search);
+  const redirect = params.get("redirect");
+
+  if (redirect?.startsWith("/")) {
+    return redirect;
+  }
+
+  return fallback;
 }

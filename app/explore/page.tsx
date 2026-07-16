@@ -1,13 +1,15 @@
 "use client";
 
-import { getBooks, TBook } from "@/service/api";
+import { addToCart, getBooks, TBook } from "@/service/api";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 const booksPerPage = 8;
 
 export default function ExplorePage() {
+  const router = useRouter();
   const [books, setBooks] = useState<TBook[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -16,6 +18,7 @@ export default function ExplorePage() {
   const [location, setLocation] = useState("All");
   const [sort, setSort] = useState("Newest");
   const [page, setPage] = useState(1);
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
     const fetchBooks = async () => {
@@ -113,6 +116,17 @@ export default function ExplorePage() {
     setPage(1);
   };
 
+  const handleAddToCart = async (bookId: string) => {
+    const result = await addToCart({ bookId });
+
+    if (result.message === "Please login first") {
+      router.push("/login?redirect=/cart");
+      return;
+    }
+
+    setMessage(result.message || "Book added to cart");
+  };
+
   return (
     <main className="bg-slate-50 px-4 py-12 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
@@ -207,6 +221,12 @@ export default function ExplorePage() {
           </button>
         </div>
 
+        {message && (
+          <p className="mb-6 rounded-2xl bg-cyan-50 px-4 py-3 text-sm font-semibold text-cyan-700">
+            {message}
+          </p>
+        )}
+
         {loading ? (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {[1, 2, 3, 4, 5, 6, 7, 8].map((item) => (
@@ -254,19 +274,27 @@ export default function ExplorePage() {
                   <p className="mt-3 line-clamp-3 flex-1 text-sm leading-6 text-slate-600">
                     {book.shortDescription}
                   </p>
-                  <div className="mt-5 flex items-center justify-between">
+                  <div className="mt-5 flex items-center justify-between gap-3">
                     <div>
                       <p className="text-lg font-bold text-emerald-700">
                         ৳{book.price}
                       </p>
                       <p className="text-xs text-slate-500">{book.location}</p>
                     </div>
-                    <Link
-                      href={`/books/${book.id}`}
-                      className="rounded-full bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-emerald-700"
-                    >
-                      View Details
-                    </Link>
+                    <div className="flex flex-col gap-2">
+                      <button
+                        onClick={() => handleAddToCart(book.id)}
+                        className="rounded-full bg-emerald-700 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-emerald-800"
+                      >
+                        Add Cart
+                      </button>
+                      <Link
+                        href={`/books/${book.id}`}
+                        className="rounded-full bg-slate-950 px-4 py-2 text-center text-sm font-semibold text-white transition-colors hover:bg-emerald-700"
+                      >
+                        Details
+                      </Link>
+                    </div>
                   </div>
                 </div>
               </article>
