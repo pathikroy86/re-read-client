@@ -14,6 +14,18 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 type TUser = {
   name: string;
@@ -137,6 +149,57 @@ export default function DashboardPage() {
       .slice(0, 8);
   }, [myBooks, myBlogs, favorites, messages]);
 
+  const activityChartData = useMemo(
+    () => [
+      { name: "Books", value: myBooks.length, color: "#047857" },
+      { name: "Blogs", value: myBlogs.length, color: "#7c3aed" },
+      { name: "Favorites", value: favorites.length, color: "#d97706" },
+      { name: "Messages", value: messages.length, color: "#0284c7" },
+    ],
+    [myBooks.length, myBlogs.length, favorites.length, messages.length]
+  );
+
+  const monthlyActivityData = useMemo(() => {
+    const months = getLastSixMonths();
+
+    const allActivities = [
+      ...myBooks.map((book) => ({ date: book.createdAt, type: "books" })),
+      ...myBlogs.map((blog) => ({ date: blog.createdAt, type: "blogs" })),
+      ...favorites.map((favorite) => ({
+        date: favorite.createdAt,
+        type: "favorites",
+      })),
+      ...messages.map((message) => ({
+        date: message.createdAt,
+        type: "messages",
+      })),
+    ];
+
+    return months.map((month) => {
+      const monthActivities = allActivities.filter((activity) => {
+        const activityDate = new Date(activity.date);
+        return (
+          activityDate.getFullYear() === month.year &&
+          activityDate.getMonth() === month.month
+        );
+      });
+
+      return {
+        name: month.label,
+        books: monthActivities.filter((activity) => activity.type === "books")
+          .length,
+        blogs: monthActivities.filter((activity) => activity.type === "blogs")
+          .length,
+        favorites: monthActivities.filter(
+          (activity) => activity.type === "favorites"
+        ).length,
+        messages: monthActivities.filter(
+          (activity) => activity.type === "messages"
+        ).length,
+      };
+    });
+  }, [myBooks, myBlogs, favorites, messages]);
+
   if (loading) {
     return (
       <main className="min-h-[70vh] bg-slate-50 px-4 py-16">
@@ -188,6 +251,112 @@ export default function DashboardPage() {
             <DashboardStat label="Blogs written" value={myBlogs.length} />
             <DashboardStat label="Saved favorites" value={favorites.length} />
             <DashboardStat label="Messages sent" value={messages.length} />
+          </div>
+        </section>
+
+        <section className="mt-8 grid gap-8 xl:grid-cols-[0.9fr_1.1fr]">
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+            <div className="mb-6">
+              <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700">
+                Activity overview
+              </p>
+              <h2 className="mt-2 text-2xl font-black text-slate-950">
+                Your activity mix
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                A quick view of how your ReRead activity is distributed.
+              </p>
+            </div>
+
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={activityChartData}
+                    dataKey="value"
+                    nameKey="name"
+                    innerRadius={62}
+                    outerRadius={98}
+                    paddingAngle={4}
+                  >
+                    {activityChartData.map((item) => (
+                      <Cell key={item.name} fill={item.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      borderRadius: "16px",
+                      border: "1px solid #e2e8f0",
+                      boxShadow: "0 12px 30px rgba(15, 23, 42, 0.12)",
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+
+            <div className="mt-5 grid grid-cols-2 gap-3">
+              {activityChartData.map((item) => (
+                <div key={item.name} className="flex items-center gap-2">
+                  <span
+                    className="h-3 w-3 rounded-full"
+                    style={{ backgroundColor: item.color }}
+                  />
+                  <p className="text-sm font-semibold text-slate-600">
+                    {item.name}: {item.value}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+            <div className="mb-6">
+              <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700">
+                Monthly progress
+              </p>
+              <h2 className="mt-2 text-2xl font-black text-slate-950">
+                Activity over the last 6 months
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                Books, blogs, favorites, and messages grouped by month.
+              </p>
+            </div>
+
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={monthlyActivityData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis
+                    dataKey="name"
+                    tickLine={false}
+                    axisLine={false}
+                    tick={{ fill: "#64748b", fontSize: 12 }}
+                  />
+                  <YAxis
+                    allowDecimals={false}
+                    tickLine={false}
+                    axisLine={false}
+                    tick={{ fill: "#64748b", fontSize: 12 }}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      borderRadius: "16px",
+                      border: "1px solid #e2e8f0",
+                      boxShadow: "0 12px 30px rgba(15, 23, 42, 0.12)",
+                    }}
+                  />
+                  <Bar dataKey="books" stackId="activity" fill="#047857" />
+                  <Bar dataKey="blogs" stackId="activity" fill="#7c3aed" />
+                  <Bar dataKey="favorites" stackId="activity" fill="#d97706" />
+                  <Bar
+                    dataKey="messages"
+                    stackId="activity"
+                    fill="#0284c7"
+                    radius={[8, 8, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </section>
 
@@ -559,4 +728,21 @@ function QuickLink({ href, title }: { href: string; title: string }) {
       <span>→</span>
     </Link>
   );
+}
+
+function getLastSixMonths() {
+  const months = [];
+  const today = new Date();
+
+  for (let index = 5; index >= 0; index--) {
+    const date = new Date(today.getFullYear(), today.getMonth() - index, 1);
+
+    months.push({
+      label: date.toLocaleDateString("en-US", { month: "short" }),
+      month: date.getMonth(),
+      year: date.getFullYear(),
+    });
+  }
+
+  return months;
 }
