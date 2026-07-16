@@ -14,11 +14,6 @@ const initialForm: TLoginForm = {
   password: "",
 };
 
-const demoUser: TLoginForm = {
-  email: "reader@reread.app",
-  password: "Reader123",
-};
-
 export default function LoginPage() {
   const router = useRouter();
   const [formData, setFormData] = useState<TLoginForm>(initialForm);
@@ -28,12 +23,6 @@ export default function LoginPage() {
 
   const handleChange = (field: keyof TLoginForm, value: string) => {
     setFormData({ ...formData, [field]: value });
-  };
-
-  const handleDemoLogin = () => {
-    setFormData(demoUser);
-    setError("");
-    setSuccess("Demo credentials added. Click Login to continue.");
   };
 
   const validateForm = () => {
@@ -118,19 +107,13 @@ export default function LoginPage() {
 
           <div className="mt-10 rounded-3xl bg-white/10 p-6">
             <p className="text-sm font-semibold uppercase tracking-wide text-emerald-100">
-              Demo account
+              Your reading space
             </p>
-            <div className="mt-4 space-y-2 text-sm text-emerald-50">
-              <p>Email: reader@reread.app</p>
-              <p>Password: Reader123</p>
+            <div className="mt-4 space-y-3 text-sm leading-6 text-emerald-50">
+              <p>Save books you love and revisit them from your profile.</p>
+              <p>Manage your own listings, blogs, messages, and cart activity.</p>
+              <p>Connect with owners and keep your used-book journey organized.</p>
             </div>
-            <button
-              type="button"
-              onClick={handleDemoLogin}
-              className="mt-5 rounded-full bg-amber-400 px-5 py-2 text-sm font-bold text-slate-950 transition-colors hover:bg-amber-300"
-            >
-              Use Demo Account
-            </button>
           </div>
         </section>
 
@@ -155,7 +138,7 @@ export default function LoginPage() {
               <input
                 id="email"
                 type="email"
-                placeholder="reader@reread.app"
+                placeholder="you@example.com"
                 value={formData.email}
                 onChange={(event) => handleChange("email", event.target.value)}
                 className="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
