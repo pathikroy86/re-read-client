@@ -1,6 +1,7 @@
 "use client";
 
 import { getCartItems, getProfile } from "@/service/api";
+import { authClient } from "@/lib/auth-client";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -106,10 +107,9 @@ export default function Header() {
 
   const handleLogout = async () => {
     try {
-      await fetch("/api/auth/sign-out", {
-        method: "POST",
-      });
+      await authClient.signOut();
       setUser(null);
+      setCartCount(0);
       setMobileOpen(false);
       router.push("/");
       router.refresh();

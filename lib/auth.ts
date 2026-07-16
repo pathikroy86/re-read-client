@@ -10,10 +10,19 @@ if (!process.env.MONGODB_URI && !process.env.MONGODB_DIRECT_URI) {
 
 const client = new MongoClient(getMongoUri());
 const db = client.db(getMongoDbName());
+const trustedOrigins = (
+    process.env.BETTER_AUTH_TRUSTED_ORIGINS ||
+    process.env.BETTER_AUTH_URL ||
+    ""
+)
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
 
 export const auth = betterAuth({
     secret: process.env.BETTER_AUTH_SECRET,
     baseURL: process.env.BETTER_AUTH_URL,
+    trustedOrigins,
     emailAndPassword: {
         enabled: true,
     },
