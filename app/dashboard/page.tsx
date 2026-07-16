@@ -2,8 +2,10 @@
 
 import {
   getBooks,
+  getBlogs,
   getContactMessages,
   getFavorites,
+  TBlog,
   TBook,
   TContactMessage,
   TFavorite,
@@ -23,13 +25,14 @@ type TActivity = {
   title: string;
   description: string;
   date: string;
-  type: "book" | "favorite" | "message";
+  type: "book" | "blog" | "favorite" | "message";
 };
 
 export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState<TUser | null>(null);
   const [myBooks, setMyBooks] = useState<TBook[]>([]);
+  const [myBlogs, setMyBlogs] = useState<TBlog[]>([]);
   const [favorites, setFavorites] = useState<TFavorite[]>([]);
   const [messages, setMessages] = useState<TContactMessage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,9 +52,10 @@ export default function DashboardPage() {
 
         setUser(session.user);
 
-        const [booksResult, favoritesResult, messageResult] =
+        const [booksResult, blogsResult, favoritesResult, messageResult] =
           await Promise.all([
             getBooks(),
+            getBlogs(),
             getFavorites(session.user.email),
             getContactMessages(session.user.email),
           ]);
@@ -61,6 +65,13 @@ export default function DashboardPage() {
             (book: TBook) => book.ownerEmail === session.user.email
           );
           setMyBooks(userBooks);
+        }
+
+        if (blogsResult.success) {
+          const userBlogs = blogsResult.data.filter(
+            (blog: TBlog) => blog.authorEmail === session.user.email
+          );
+          setMyBlogs(userBlogs);
         }
 
         if (favoritesResult.success) {
@@ -98,6 +109,14 @@ export default function DashboardPage() {
       type: "favorite",
     }));
 
+    const blogActivities: TActivity[] = myBlogs.map((blog) => ({
+      id: `blog-${blog.id}`,
+      title: "Blog published",
+      description: blog.title,
+      date: blog.createdAt,
+      type: "blog",
+    }));
+
     const messageActivities: TActivity[] = messages.map((message) => ({
       id: `message-${message.id}`,
       title: "Message sent",
@@ -106,12 +125,17 @@ export default function DashboardPage() {
       type: "message",
     }));
 
-    return [...bookActivities, ...favoriteActivities, ...messageActivities]
+    return [
+      ...bookActivities,
+      ...blogActivities,
+      ...favoriteActivities,
+      ...messageActivities,
+    ]
       .sort(
         (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
       )
       .slice(0, 8);
-  }, [myBooks, favorites, messages]);
+  }, [myBooks, myBlogs, favorites, messages]);
 
   if (loading) {
     return (
@@ -161,12 +185,9 @@ export default function DashboardPage() {
 
           <div className="relative mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <DashboardStat label="Books listed" value={myBooks.length} />
+            <DashboardStat label="Blogs written" value={myBlogs.length} />
             <DashboardStat label="Saved favorites" value={favorites.length} />
             <DashboardStat label="Messages sent" value={messages.length} />
-            <DashboardStat
-              label="Total activities"
-              value={recentActivities.length}
-            />
           </div>
         </section>
 
@@ -247,6 +268,42 @@ export default function DashboardPage() {
                 description="Add your first used book and it will appear here."
                 href="/items/add"
                 buttonText="Add Book"
+              />
+            )}
+          </DashboardPanel>
+
+          <DashboardPanel
+            title="Blogs you wrote"
+            subtitle="Your reading journal posts"
+            actionHref="/blog/write"
+            actionText="Write Blog"
+          >
+            {myBlogs.length ? (
+              <div className="grid gap-4 sm:grid-cols-2">
+                {myBlogs.slice(0, 4).map((blog) => (
+                  <Link
+                    key={blog.id}
+                    href={`/blog/${blog.id}`}
+                    className="rounded-3xl border border-slate-100 bg-slate-50 p-5 transition hover:border-emerald-200 hover:bg-emerald-50"
+                  >
+                    <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-700">
+                      {blog.category}
+                    </span>
+                    <h3 className="mt-4 line-clamp-2 font-bold text-slate-950">
+                      {blog.title}
+                    </h3>
+                    <p className="mt-2 text-sm text-slate-500">
+                      {blog.commentsCount} comments · {blog.readTime}
+                    </p>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                title="No blogs written"
+                description="Write about any book you love and it will appear here."
+                href="/blog/write"
+                buttonText="Write Blog"
               />
             )}
           </DashboardPanel>
@@ -337,6 +394,7 @@ function ActivityItem({ activity }: { activity: TActivity }) {
 
   const typeStyle = {
     book: "bg-emerald-100 text-emerald-700",
+    blog: "bg-violet-100 text-violet-700",
     favorite: "bg-amber-100 text-amber-700",
     message: "bg-sky-100 text-sky-700",
   }[activity.type];
@@ -346,7 +404,13 @@ function ActivityItem({ activity }: { activity: TActivity }) {
       <div
         className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-lg font-black ${typeStyle}`}
       >
-        {activity.type === "book" ? "B" : activity.type === "favorite" ? "F" : "M"}
+        {activity.type === "book"
+          ? "B"
+          : activity.type === "blog"
+            ? "W"
+            : activity.type === "favorite"
+              ? "F"
+              : "M"}
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex flex-col justify-between gap-1 sm:flex-row">

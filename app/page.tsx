@@ -1,4 +1,3 @@
-import { BackendStatusSection } from "@/components/pages/home/BackendStatusSection";
 import { FaqNewsletterSection } from "@/components/pages/home/FaqNewsletterSection";
 import FeaturedBooksSection from "@/components/pages/home/FeaturedBooksSection";
 import { GenreSection } from "@/components/pages/home/GenreSection";
@@ -12,7 +11,6 @@ export default function Home() {
   return (
     <div>
       <HeroSection />
-      <BackendStatusSection />
       <FeaturedBooksSection />
       <GenreSection />
       <HowItWorksSection />

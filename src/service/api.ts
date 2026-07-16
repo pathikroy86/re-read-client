@@ -38,6 +38,32 @@ export type TContactMessage = {
   createdAt: string;
 };
 
+export type TBlogComment = {
+  id: string;
+  blogId: string;
+  comment: string;
+  userName: string;
+  userEmail: string;
+  createdAt: string;
+};
+
+export type TBlog = {
+  id: string;
+  title: string;
+  bookTitle: string;
+  category: string;
+  coverImage?: string;
+  excerpt: string;
+  content: string;
+  authorName: string;
+  authorEmail: string;
+  readTime: string;
+  status: string;
+  commentsCount: number;
+  comments?: TBlogComment[];
+  createdAt: string;
+};
+
 export async function getBackendHealth() {
   try {
     const res = await fetch("/api/backend-health", {
@@ -157,4 +183,60 @@ export async function getContactMessages(userEmail: string) {
       data: [],
     };
   }
+}
+
+export async function getBlogs() {
+  try {
+    const res = await fetch("/api/blogs", {
+      cache: "no-store",
+    });
+
+    return await res.json();
+  } catch {
+    return {
+      success: false,
+      message: "Blogs are not reachable",
+      data: [],
+    };
+  }
+}
+
+export async function getBlog(id: string) {
+  try {
+    const res = await fetch(`/api/blogs/${id}`, {
+      cache: "no-store",
+    });
+
+    return await res.json();
+  } catch {
+    return {
+      success: false,
+      message: "Blog is not reachable",
+      data: null,
+    };
+  }
+}
+
+export async function addBlog(data: unknown) {
+  const res = await fetch("/api/blogs", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+
+  return await res.json();
+}
+
+export async function addBlogComment(blogId: string, data: unknown) {
+  const res = await fetch(`/api/blogs/${blogId}/comments`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+
+  return await res.json();
 }
